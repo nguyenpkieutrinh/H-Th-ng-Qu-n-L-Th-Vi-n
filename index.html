@@ -1,0 +1,1956 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý Thư viện</title>
+    <meta
+      name="description"
+      content="Ứng dụng web quản lý thư viện toàn diện với lưu trữ localStorage, quản lý sách, độc giả và nghiệp vụ mượn trả."
+    />
+    <meta property="og:title" content="Quản lý Thư viện" />
+    <meta
+      property="og:description"
+      content="Ứng dụng web quản lý thư viện toàn diện với lưu trữ localStorage, quản lý sách, độc giả và nghiệp vụ mượn trả."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Plus Jakarta Sans + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .tabular-nums {
+        font-variant-numeric: tabular-nums;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <div id="app" class="flex min-h-screen">
+      <!-- Mobile Sidebar Backdrop -->
+      <div
+        id="sidebar-backdrop"
+        class="fixed inset-0 z-30 bg-slate-900/40 hidden lg:hidden transition-opacity"
+        onclick="toggleSidebar(false)"
+      ></div>
+
+      <!-- Sidebar Navigation -->
+      <aside
+        id="sidebar"
+        class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-200 ease-out shrink-0"
+        aria-label="Điều hướng chính"
+      >
+        <!-- Brand Header -->
+        <div class="h-16 px-6 flex items-center justify-between border-b border-slate-200 shrink-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-blue-700 text-white flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+              </svg>
+            </div>
+            <span class="text-base font-bold tracking-tight text-slate-900 whitespace-nowrap truncate">
+              Thư Viện Trung Tâm
+            </span>
+          </div>
+          <button
+            type="button"
+            onclick="toggleSidebar(false)"
+            class="lg:hidden p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            aria-label="Đóng menu"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto" id="sidebar-nav">
+          <button
+            type="button"
+            data-tab="dashboard"
+            onclick="switchTab('dashboard')"
+            class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="7" height="9" x="3" y="3" rx="1" />
+              <rect width="7" height="5" x="14" y="3" rx="1" />
+              <rect width="7" height="9" x="14" y="12" rx="1" />
+              <rect width="7" height="5" x="3" y="16" rx="1" />
+            </svg>
+            <span>Tổng quan</span>
+          </button>
+
+          <button
+            type="button"
+            data-tab="books"
+            onclick="switchTab('books')"
+            class="nav-item w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <span class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              <span>Sách</span>
+            </span>
+            <span id="nav-count-books" class="text-xs font-mono tabular-nums text-slate-500">0</span>
+          </button>
+
+          <button
+            type="button"
+            data-tab="readers"
+            onclick="switchTab('readers')"
+            class="nav-item w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <span class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Độc giả</span>
+            </span>
+            <span id="nav-count-readers" class="text-xs font-mono tabular-nums text-slate-500">0</span>
+          </button>
+
+          <button
+            type="button"
+            data-tab="loans"
+            onclick="switchTab('loans')"
+            class="nav-item w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <span class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m17 2 4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                <path d="m7 22-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+              </svg>
+              <span>Mượn / Trả</span>
+            </span>
+            <span id="nav-count-loans" class="text-xs font-mono tabular-nums text-slate-500">0</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar Footer Action -->
+        <div class="p-4 border-t border-slate-200 shrink-0 space-y-3">
+          <div class="text-xs text-slate-500 flex items-center justify-between">
+            <span>Phí phạt quá hạn</span>
+            <span class="font-mono tabular-nums font-medium text-slate-700">5.000đ / ngày</span>
+          </div>
+          <button
+            type="button"
+            onclick="confirmResetSampleData()"
+            class="w-full px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>Khôi phục dữ liệu mẫu</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <div class="flex-1 flex flex-col min-w-0">
+        <!-- Top Header Bar -->
+        <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 sticky top-0 z-20 shrink-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onclick="toggleSidebar(true)"
+              class="lg:hidden p-2 -ml-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              aria-label="Mở menu điều hướng"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </button>
+            <div class="flex items-center gap-2 text-sm min-w-0">
+              <span class="text-slate-400 hidden sm:inline whitespace-nowrap">Hệ thống</span>
+              <span class="text-slate-300 hidden sm:inline" aria-hidden="true">/</span>
+              <h1 id="page-title" class="text-base sm:text-lg font-semibold text-slate-900 truncate">
+                Tổng quan
+              </h1>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 shrink-0">
+            <button
+              id="header-primary-cta"
+              type="button"
+              onclick="handleHeaderCta()"
+              class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+              <span id="header-cta-label">Tạo phiếu mượn</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Main Content Viewport -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
+          <!-- TAB 1: DASHBOARD -->
+          <section id="view-dashboard" class="space-y-6">
+            <!-- 4 KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <div class="text-sm font-medium text-slate-500">Tổng số sách</div>
+                <div id="kpi-total-books" class="mt-2 text-3xl font-bold tracking-tight text-slate-900 tabular-nums">0</div>
+                <div id="kpi-total-books-sub" class="mt-1.5 text-xs text-slate-500 tabular-nums">0 đầu sách · 0 bản trong kho</div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <div class="text-sm font-medium text-slate-500">Sách đang cho mượn</div>
+                <div id="kpi-borrowed-books" class="mt-2 text-3xl font-bold tracking-tight text-blue-700 tabular-nums">0</div>
+                <div id="kpi-borrowed-books-sub" class="mt-1.5 text-xs text-slate-500 tabular-nums">0 phiếu đang lưu hành</div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <div class="text-sm font-medium text-slate-500">Tổng độc giả</div>
+                <div id="kpi-total-readers" class="mt-2 text-3xl font-bold tracking-tight text-slate-900 tabular-nums">0</div>
+                <div id="kpi-total-readers-sub" class="mt-1.5 text-xs text-slate-500 tabular-nums">0 hoạt động · 0 đã khóa</div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-xl p-5">
+                <div class="text-sm font-medium text-slate-500">Số phiếu quá hạn</div>
+                <div id="kpi-overdue-loans" class="mt-2 text-3xl font-bold tracking-tight text-red-600 tabular-nums">0</div>
+                <div id="kpi-overdue-loans-sub" class="mt-1.5 text-xs text-slate-500 tabular-nums">Phạt tạm tính: 0đ</div>
+              </div>
+            </div>
+
+            <!-- Dashboard Grid: Active/Overdue Loans + Inventory Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <!-- Active & Overdue Loans Overview -->
+              <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-4">
+                  <div>
+                    <h2 class="text-base font-semibold text-slate-900">Phiếu mượn đang mở</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Theo dõi hạn trả và xử lý trả sách nhanh</p>
+                  </div>
+                  <button
+                    type="button"
+                    onclick="switchTab('loans')"
+                    class="text-xs font-medium text-blue-700 hover:text-blue-800 hover:underline whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+                  >
+                    Xem tất cả phiếu
+                  </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
+                        <th class="py-3 px-5 whitespace-nowrap">Mã phiếu</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Độc giả</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Sách mượn</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Hạn trả</th>
+                        <th class="py-3 px-4 whitespace-nowrap">Trạng thái</th>
+                        <th class="py-3 px-5 text-right whitespace-nowrap">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboard-active-loans-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Inventory Health & Categories -->
+              <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-6">
+                <div>
+                  <h2 class="text-base font-semibold text-slate-900">Tình trạng kho sách</h2>
+                  <p class="text-xs text-slate-500 mt-0.5">Phân bổ theo đầu sách hiện có</p>
+                  <div id="dashboard-status-breakdown" class="mt-4 space-y-3"></div>
+                </div>
+
+                <div class="pt-5 border-t border-slate-200">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-slate-900">Thể loại nổi bật</h3>
+                    <button
+                      type="button"
+                      onclick="switchTab('books')"
+                      class="text-xs font-medium text-blue-700 hover:underline whitespace-nowrap"
+                    >
+                      Quản lý sách
+                    </button>
+                  </div>
+                  <div id="dashboard-category-breakdown" class="mt-3 space-y-2.5"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 2: BOOKS MANAGEMENT -->
+          <section id="view-books" class="hidden space-y-5">
+            <!-- Toolbar: Search + Status Filter -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div class="relative flex-1 max-w-md">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  id="book-search-input"
+                  type="search"
+                  oninput="renderBooks()"
+                  placeholder="Tìm theo tên sách, tác giả, thể loại hoặc mã..."
+                  class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg" id="book-status-filters" role="tablist" aria-label="Lọc tình trạng sách">
+                <button type="button" data-filter="Tất cả" onclick="setBookFilter('Tất cả')" class="book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Tất cả</button>
+                <button type="button" data-filter="Còn trong kho" onclick="setBookFilter('Còn trong kho')" class="book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Còn trong kho</button>
+                <button type="button" data-filter="Đang mượn" onclick="setBookFilter('Đang mượn')" class="book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Đang mượn</button>
+                <button type="button" data-filter="Hư hỏng" onclick="setBookFilter('Hư hỏng')" class="book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Hư hỏng</button>
+                <button type="button" data-filter="Thất lạc" onclick="setBookFilter('Thất lạc')" class="book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Thất lạc</button>
+              </div>
+            </div>
+
+            <!-- Books Table -->
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
+                      <th class="py-3.5 px-5 whitespace-nowrap">Mã sách</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Tên sách & Tác giả</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Thể loại</th>
+                      <th class="py-3.5 px-4 text-right whitespace-nowrap">Số lượng tồn</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Tình trạng</th>
+                      <th class="py-3.5 px-5 text-right whitespace-nowrap">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="books-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 3: READERS MANAGEMENT -->
+          <section id="view-readers" class="hidden space-y-5">
+            <!-- Toolbar: Search + Card Status Filter -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div class="relative flex-1 max-w-md">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  id="reader-search-input"
+                  type="search"
+                  oninput="renderReaders()"
+                  placeholder="Tìm theo tên độc giả, mã thẻ, email hoặc SĐT..."
+                  class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg" id="reader-status-filters" role="tablist" aria-label="Lọc trạng thái thẻ độc giả">
+                <button type="button" data-filter="all" onclick="setReaderFilter('all')" class="reader-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Tất cả</button>
+                <button type="button" data-filter="active" onclick="setReaderFilter('active')" class="reader-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Đang hoạt động</button>
+                <button type="button" data-filter="locked" onclick="setReaderFilter('locked')" class="reader-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Đã khóa thẻ</button>
+              </div>
+            </div>
+
+            <!-- Readers Table -->
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
+                      <th class="py-3.5 px-5 whitespace-nowrap">Mã thẻ</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Độc giả</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Số điện thoại</th>
+                      <th class="py-3.5 px-4 text-right whitespace-nowrap">Đang mượn</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Trạng thái thẻ</th>
+                      <th class="py-3.5 px-5 text-right whitespace-nowrap">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="readers-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 4: LOANS (BORROW / RETURN) -->
+          <section id="view-loans" class="hidden space-y-6">
+            <!-- Borrow Form Card -->
+            <div id="borrow-form-panel" class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-200">
+                <div>
+                  <h2 class="text-base font-semibold text-slate-900">Tạo phiếu mượn sách mới</h2>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Chỉ hỗ trợ độc giả đang hoạt động (Active) và sách còn số lượng trong kho &gt; 0.
+                  </p>
+                </div>
+                <span class="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                  Phí quá hạn: 5.000đ / ngày
+                </span>
+              </div>
+
+              <form id="borrow-form" onsubmit="handleCreateLoan(event)" class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+                <div class="xl:col-span-4">
+                  <label for="loan-reader-select" class="block text-xs font-medium text-slate-700 mb-1.5">
+                    Độc giả (Đang hoạt động) <span class="text-red-600">*</span>
+                  </label>
+                  <select
+                    id="loan-reader-select"
+                    required
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  ></select>
+                </div>
+
+                <div class="xl:col-span-4">
+                  <label for="loan-book-select" class="block text-xs font-medium text-slate-700 mb-1.5">
+                    Sách mượn (Số lượng &gt; 0) <span class="text-red-600">*</span>
+                  </label>
+                  <select
+                    id="loan-book-select"
+                    required
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  ></select>
+                </div>
+
+                <div class="xl:col-span-2">
+                  <label for="loan-borrow-date" class="block text-xs font-medium text-slate-700 mb-1.5">
+                    Ngày mượn <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="loan-borrow-date"
+                    type="date"
+                    required
+                    class="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+
+                <div class="xl:col-span-2">
+                  <label for="loan-due-date" class="block text-xs font-medium text-slate-700 mb-1.5">
+                    Hạn trả <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="loan-due-date"
+                    type="date"
+                    required
+                    class="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                </div>
+
+                <div class="md:col-span-2 xl:col-span-12 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+                  <p id="borrow-form-availability-note" class="text-xs text-slate-500"></p>
+                  <button
+                    id="borrow-submit-btn"
+                    type="submit"
+                    class="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                  >
+                    Xác nhận cho mượn
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Loans Filter & Search -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div class="relative flex-1 max-w-md">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  id="loan-search-input"
+                  type="search"
+                  oninput="renderLoans()"
+                  placeholder="Tìm theo mã phiếu, tên độc giả hoặc tên sách..."
+                  class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg" id="loan-status-filters" role="tablist" aria-label="Lọc trạng thái phiếu mượn">
+                <button type="button" data-filter="all" onclick="setLoanFilter('all')" class="loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Tất cả</button>
+                <button type="button" data-filter="active" onclick="setLoanFilter('active')" class="loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Đang mượn</button>
+                <button type="button" data-filter="overdue" onclick="setLoanFilter('overdue')" class="loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Quá hạn</button>
+                <button type="button" data-filter="returned" onclick="setLoanFilter('returned')" class="loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap">Đã trả</button>
+              </div>
+            </div>
+
+            <!-- Loans Table -->
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
+                      <th class="py-3.5 px-5 whitespace-nowrap">Mã phiếu</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Độc giả</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Sách mượn</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Ngày mượn / Hạn trả</th>
+                      <th class="py-3.5 px-4 whitespace-nowrap">Trạng thái</th>
+                      <th class="py-3.5 px-4 text-right whitespace-nowrap">Tiền phạt</th>
+                      <th class="py-3.5 px-5 text-right whitespace-nowrap">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="loans-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT BOOK -->
+    <div id="book-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
+      <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 id="book-modal-title" class="text-base font-semibold text-slate-900">Thêm sách mới</h2>
+          <button type="button" onclick="closeModal('book-modal')" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label="Đóng">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form id="book-form" onsubmit="handleSaveBook(event)" class="p-6 space-y-4">
+          <input type="hidden" id="book-id-input" />
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="book-code-input" class="block text-xs font-medium text-slate-700 mb-1.5">Mã sách <span class="text-red-600">*</span></label>
+              <input id="book-code-input" type="text" required placeholder="BK-107" class="w-full px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div class="sm:col-span-2">
+              <label for="book-category-input" class="block text-xs font-medium text-slate-700 mb-1.5">Thể loại <span class="text-red-600">*</span></label>
+              <input id="book-category-input" type="text" list="category-suggestions" required placeholder="Văn học, Công nghệ thông tin..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              <datalist id="category-suggestions">
+                <option value="Văn học"></option>
+                <option value="Công nghệ thông tin"></option>
+                <option value="Kỹ năng sống"></option>
+                <option value="Lịch sử"></option>
+                <option value="Kinh tế"></option>
+                <option value="Tâm lý học"></option>
+                <option value="Khoa học"></option>
+              </datalist>
+            </div>
+          </div>
+
+          <div>
+            <label for="book-title-input" class="block text-xs font-medium text-slate-700 mb-1.5">Tên sách <span class="text-red-600">*</span></label>
+            <input id="book-title-input" type="text" required placeholder="Nhập tên sách đầy đủ" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div>
+            <label for="book-author-input" class="block text-xs font-medium text-slate-700 mb-1.5">Tác giả <span class="text-red-600">*</span></label>
+            <input id="book-author-input" type="text" required placeholder="Nhập tên tác giả" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="book-quantity-input" class="block text-xs font-medium text-slate-700 mb-1.5">Số lượng trong kho <span class="text-red-600">*</span></label>
+              <input id="book-quantity-input" type="number" min="0" step="1" required class="w-full px-3 py-2 text-sm font-mono tabular-nums border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label for="book-status-input" class="block text-xs font-medium text-slate-700 mb-1.5">Tình trạng <span class="text-red-600">*</span></label>
+              <select id="book-status-input" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                <option value="Còn trong kho">Còn trong kho</option>
+                <option value="Đang mượn">Đang mượn</option>
+                <option value="Hư hỏng">Hư hỏng</option>
+                <option value="Thất lạc">Thất lạc</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeModal('book-modal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+              Hủy
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+              Lưu thông tin
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT READER -->
+    <div id="reader-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="reader-modal-title">
+      <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 id="reader-modal-title" class="text-base font-semibold text-slate-900">Thêm độc giả mới</h2>
+          <button type="button" onclick="closeModal('reader-modal')" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label="Đóng">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form id="reader-form" onsubmit="handleSaveReader(event)" class="p-6 space-y-4">
+          <input type="hidden" id="reader-id-input" />
+          <div>
+            <label for="reader-name-input" class="block text-xs font-medium text-slate-700 mb-1.5">Họ và tên <span class="text-red-600">*</span></label>
+            <input id="reader-name-input" type="text" required placeholder="Nguyễn Văn A" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div>
+            <label for="reader-email-input" class="block text-xs font-medium text-slate-700 mb-1.5">Email <span class="text-red-600">*</span></label>
+            <input id="reader-email-input" type="email" required placeholder="email@example.com" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div>
+            <label for="reader-phone-input" class="block text-xs font-medium text-slate-700 mb-1.5">Số điện thoại <span class="text-red-600">*</span></label>
+            <input id="reader-phone-input" type="tel" required placeholder="0912 345 678" class="w-full px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <div>
+            <label for="reader-active-input" class="block text-xs font-medium text-slate-700 mb-1.5">Trạng thái thẻ</label>
+            <select id="reader-active-input" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="true">Đang hoạt động (Active)</option>
+              <option value="false">Đã khóa thẻ</option>
+            </select>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeModal('reader-modal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+              Hủy
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+              Lưu độc giả
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: RETURN BOOK CONFIRMATION -->
+    <div id="return-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="return-modal-title">
+      <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 id="return-modal-title" class="text-base font-semibold text-slate-900">Xác nhận trả sách</h2>
+          <button type="button" onclick="closeModal('return-modal')" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label="Đóng">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div id="return-modal-details" class="space-y-3 text-sm"></div>
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeModal('return-modal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+              Hủy
+            </button>
+            <button id="return-confirm-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+              Xác nhận trả sách
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GENERIC CONFIRMATION (DELETE / RESET) -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+      <div class="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+        <div class="p-6 space-y-3">
+          <h2 id="confirm-modal-title" class="text-base font-semibold text-slate-900">Xác nhận thao tác</h2>
+          <p id="confirm-modal-message" class="text-sm text-slate-600 leading-relaxed"></p>
+          <div class="pt-4 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeModal('confirm-modal')" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+              Hủy
+            </button>
+            <button id="confirm-modal-action" type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0" aria-live="polite"></div>
+
+    <script>
+      // =========================================================================
+      // 1. CONSTANTS & STATE
+      // =========================================================================
+      const STORAGE_KEYS = {
+        BOOKS: 'lib_books_v1',
+        READERS: 'lib_readers_v1',
+        LOANS: 'lib_loans_v1',
+      };
+
+      const DAILY_OVERDUE_FINE = 5000; // 5.000đ / ngày
+
+      const BOOK_STATUSES = ['Còn trong kho', 'Đang mượn', 'Hư hỏng', 'Thất lạc'];
+
+      let state = {
+        currentTab: 'dashboard',
+        books: [],
+        readers: [],
+        loans: [],
+        bookFilter: 'Tất cả',
+        readerFilter: 'all',
+        loanFilter: 'all',
+      };
+
+      // =========================================================================
+      // 2. DATE, FORMAT & SECURITY HELPERS
+      // =========================================================================
+      function formatDateISO(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      function addDaysISO(baseDate, days) {
+        const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+        d.setDate(d.getDate() + days);
+        return formatDateISO(d);
+      }
+
+      function parseLocalDate(isoStr) {
+        const [y, m, d] = isoStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      }
+
+      function diffDays(fromISO, toISO) {
+        const msPerDay = 86400000;
+        return Math.round((parseLocalDate(toISO) - parseLocalDate(fromISO)) / msPerDay);
+      }
+
+      function formatDisplayDate(isoStr) {
+        if (!isoStr) return '—';
+        const [y, m, d] = isoStr.split('-');
+        return `${d}/${m}/${y}`;
+      }
+
+      function formatVND(amount) {
+        return `${Number(amount || 0).toLocaleString('vi-VN')}đ`;
+      }
+
+      function escapeHTML(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function getTodayISO() {
+        return formatDateISO(new Date());
+      }
+
+      function getLoanOverdueInfo(loan) {
+        const today = getTodayISO();
+        if (loan.returnDate) {
+          const daysLate = Math.max(0, diffDays(loan.dueDate, loan.returnDate));
+          return {
+            isReturned: true,
+            isOverdue: daysLate > 0,
+            overdueDays: daysLate,
+            fine: loan.fine || 0,
+          };
+        }
+        const daysLate = Math.max(0, diffDays(loan.dueDate, today));
+        return {
+          isReturned: false,
+          isOverdue: daysLate > 0,
+          overdueDays: daysLate,
+          fine: daysLate * DAILY_OVERDUE_FINE,
+        };
+      }
+
+      // =========================================================================
+      // 3. LOCALSTORAGE & SAMPLE DATA INITIALIZATION
+      // =========================================================================
+      function createSampleData() {
+        const today = new Date();
+        return {
+          books: [
+            {
+              id: 'S001',
+              code: 'BK-101',
+              title: 'Nhà Giả Kim',
+              author: 'Paulo Coelho',
+              category: 'Văn học',
+              quantity: 5,
+              status: 'Còn trong kho',
+            },
+            {
+              id: 'S002',
+              code: 'BK-102',
+              title: 'Clean Code — Mã Sạch',
+              author: 'Robert C. Martin',
+              category: 'Công nghệ thông tin',
+              quantity: 3,
+              status: 'Còn trong kho',
+            },
+            {
+              id: 'S003',
+              code: 'BK-103',
+              title: 'Đắc Nhân Tâm',
+              author: 'Dale Carnegie',
+              category: 'Kỹ năng sống',
+              quantity: 0,
+              status: 'Đang mượn',
+            },
+            {
+              id: 'S004',
+              code: 'BK-104',
+              title: 'Sapiens: Lược Sử Loài Người',
+              author: 'Yuval Noah Harari',
+              category: 'Lịch sử',
+              quantity: 4,
+              status: 'Còn trong kho',
+            },
+            {
+              id: 'S005',
+              code: 'BK-105',
+              title: 'Tư Duy Nhanh Và Chậm',
+              author: 'Daniel Kahneman',
+              category: 'Tâm lý học',
+              quantity: 2,
+              status: 'Còn trong kho',
+            },
+            {
+              id: 'S006',
+              code: 'BK-106',
+              title: 'Designing Data-Intensive Applications',
+              author: 'Martin Kleppmann',
+              category: 'Công nghệ thông tin',
+              quantity: 1,
+              status: 'Hư hỏng',
+            },
+          ],
+          readers: [
+            {
+              id: 'DG-001',
+              name: 'Nguyễn Minh Anh',
+              email: 'minhanh.nguyen@example.com',
+              phone: '0912 345 678',
+              active: true,
+            },
+            {
+              id: 'DG-002',
+              name: 'Trần Quốc Bảo',
+              email: 'quocbao.tran@example.com',
+              phone: '0987 654 321',
+              active: true,
+            },
+            {
+              id: 'DG-003',
+              name: 'Lê Thảo Vy',
+              email: 'thaovy.le@example.com',
+              phone: '0905 112 233',
+              active: false,
+            },
+            {
+              id: 'DG-004',
+              name: 'Phạm Hoàng Nam',
+              email: 'hoangnam.pham@example.com',
+              phone: '0938 776 889',
+              active: true,
+            },
+          ],
+          loans: [
+            {
+              id: 'PM-001',
+              readerId: 'DG-001',
+              bookId: 'S003',
+              borrowDate: addDaysISO(today, -12),
+              dueDate: addDaysISO(today, -5), // Quá hạn 5 ngày
+              returnDate: null,
+              fine: 0,
+            },
+            {
+              id: 'PM-002',
+              readerId: 'DG-002',
+              bookId: 'S002',
+              borrowDate: addDaysISO(today, -2),
+              dueDate: addDaysISO(today, 5), // Còn hạn 5 ngày
+              returnDate: null,
+              fine: 0,
+            },
+            {
+              id: 'PM-003',
+              readerId: 'DG-004',
+              bookId: 'S004',
+              borrowDate: addDaysISO(today, -14),
+              dueDate: addDaysISO(today, -7),
+              returnDate: addDaysISO(today, -8), // Đã trả đúng hạn
+              fine: 0,
+            },
+          ],
+        };
+      }
+
+      function loadData() {
+        const hasBooks = localStorage.getItem(STORAGE_KEYS.BOOKS) !== null;
+        const hasReaders = localStorage.getItem(STORAGE_KEYS.READERS) !== null;
+        const hasLoans = localStorage.getItem(STORAGE_KEYS.LOANS) !== null;
+
+        if (!hasBooks && !hasReaders && !hasLoans) {
+          const sample = createSampleData();
+          state.books = sample.books;
+          state.readers = sample.readers;
+          state.loans = sample.loans;
+          saveAllData();
+          return;
+        }
+
+        try {
+          state.books = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKS) || '[]');
+          state.readers = JSON.parse(localStorage.getItem(STORAGE_KEYS.READERS) || '[]');
+          state.loans = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOANS) || '[]');
+        } catch (err) {
+          const sample = createSampleData();
+          state.books = sample.books;
+          state.readers = sample.readers;
+          state.loans = sample.loans;
+          saveAllData();
+          showToast('Dữ liệu lưu trữ bị lỗi, đã khôi phục dữ liệu mẫu.', 'error');
+        }
+      }
+
+      function saveAllData() {
+        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(state.books));
+        localStorage.setItem(STORAGE_KEYS.READERS, JSON.stringify(state.readers));
+        localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(state.loans));
+      }
+
+      function confirmResetSampleData() {
+        openConfirmModal({
+          title: 'Khôi phục dữ liệu mẫu',
+          message:
+            'Toàn bộ sách, độc giả và phiếu mượn hiện tại sẽ được thay thế bằng dữ liệu mẫu ban đầu. Bạn có chắc muốn tiếp tục?',
+          confirmLabel: 'Khôi phục',
+          confirmVariant: 'primary',
+          onConfirm: () => {
+            const sample = createSampleData();
+            state.books = sample.books;
+            state.readers = sample.readers;
+            state.loans = sample.loans;
+            saveAllData();
+            renderAll();
+            showToast('Đã khôi phục dữ liệu mẫu thành công.', 'success');
+          },
+        });
+      }
+
+      // =========================================================================
+      // 4. TOAST NOTIFICATIONS
+      // =========================================================================
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+
+        const styles = {
+          success: 'bg-white border-emerald-200 text-slate-900',
+          error: 'bg-white border-red-200 text-slate-900',
+          warning: 'bg-white border-amber-200 text-slate-900',
+        };
+
+        const iconHtml =
+          type === 'success'
+            ? `<div class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+               </div>`
+            : type === 'error'
+              ? `<div class="w-6 h-6 rounded-md bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                 </div>`
+              : `<div class="w-6 h-6 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                 </div>`;
+
+        toast.className = `pointer-events-auto border rounded-xl shadow-lg p-3.5 flex items-start gap-3 transition-all duration-200 translate-y-2 opacity-0 ${styles[type] || styles.success}`;
+        toast.innerHTML = `
+          ${iconHtml}
+          <div class="text-sm font-medium text-slate-800 flex-1 leading-snug pt-0.5">${escapeHTML(message)}</div>
+          <button type="button" class="text-slate-400 hover:text-slate-700 p-0.5 rounded" aria-label="Đóng thông báo">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        `;
+
+        const dismiss = () => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 180);
+        };
+
+        toast.querySelector('button').addEventListener('click', dismiss);
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(dismiss, 4200);
+      }
+
+      // =========================================================================
+      // 5. NAVIGATION & MODALS
+      // =========================================================================
+      const TAB_CONFIG = {
+        dashboard: { title: 'Tổng quan', ctaLabel: 'Tạo phiếu mượn' },
+        books: { title: 'Quản lý Sách', ctaLabel: 'Thêm sách mới' },
+        readers: { title: 'Quản lý Độc giả', ctaLabel: 'Thêm độc giả' },
+        loans: { title: 'Nghiệp vụ Mượn - Trả', ctaLabel: 'Tạo phiếu mượn' },
+      };
+
+      function switchTab(tab) {
+        if (!TAB_CONFIG[tab]) return;
+        state.currentTab = tab;
+
+        document.querySelectorAll('main > section').forEach((sec) => {
+          sec.classList.add('hidden');
+        });
+        document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach((btn) => {
+          const isActive = btn.dataset.tab === tab;
+          btn.className = isActive
+            ? 'nav-item w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-blue-50 text-blue-700 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600'
+            : 'nav-item w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600';
+        });
+
+        document.getElementById('page-title').textContent = TAB_CONFIG[tab].title;
+        document.getElementById('header-cta-label').textContent = TAB_CONFIG[tab].ctaLabel;
+
+        toggleSidebar(false);
+        renderAll();
+      }
+
+      function handleHeaderCta() {
+        if (state.currentTab === 'books') {
+          openBookModal();
+        } else if (state.currentTab === 'readers') {
+          openReaderModal();
+        } else if (state.currentTab === 'dashboard') {
+          switchTab('loans');
+          setTimeout(() => document.getElementById('loan-reader-select').focus(), 60);
+        } else {
+          document.getElementById('loan-reader-select').focus();
+          document.getElementById('borrow-form-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
+      function toggleSidebar(open) {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (open) {
+          sidebar.classList.remove('-translate-x-full');
+          backdrop.classList.remove('hidden');
+        } else {
+          sidebar.classList.add('-translate-x-full');
+          backdrop.classList.add('hidden');
+        }
+      }
+
+      function openModal(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+
+      function closeModal(id) {
+        const el = document.getElementById(id);
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+
+      let confirmCallback = null;
+      function openConfirmModal({ title, message, confirmLabel = 'Xác nhận', confirmVariant = 'danger', onConfirm }) {
+        document.getElementById('confirm-modal-title').textContent = title;
+        document.getElementById('confirm-modal-message').textContent = message;
+        const btn = document.getElementById('confirm-modal-action');
+        btn.textContent = confirmLabel;
+        btn.className =
+          confirmVariant === 'primary'
+            ? 'px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors'
+            : 'px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors';
+
+        confirmCallback = onConfirm;
+        btn.onclick = () => {
+          closeModal('confirm-modal');
+          if (typeof confirmCallback === 'function') {
+            const cb = confirmCallback;
+            confirmCallback = null;
+            cb();
+          }
+        };
+        openModal('confirm-modal');
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          ['book-modal', 'reader-modal', 'return-modal', 'confirm-modal'].forEach(closeModal);
+        }
+      });
+
+      // =========================================================================
+      // 6. DASHBOARD RENDERING
+      // =========================================================================
+      function renderDashboard() {
+        const activeLoans = state.loans.filter((l) => !l.returnDate);
+        const overdueLoans = activeLoans.filter((l) => getLoanOverdueInfo(l).isOverdue);
+
+        const totalInStock = state.books.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
+        const totalCopies = totalInStock + activeLoans.length;
+
+        const activeReaders = state.readers.filter((r) => r.active).length;
+        const lockedReaders = state.readers.length - activeReaders;
+        const pendingFine = overdueLoans.reduce((sum, l) => sum + getLoanOverdueInfo(l).fine, 0);
+
+        document.getElementById('kpi-total-books').textContent = totalCopies.toLocaleString('vi-VN');
+        document.getElementById('kpi-total-books-sub').textContent = `${state.books.length} đầu sách · ${totalInStock} bản trong kho`;
+
+        document.getElementById('kpi-borrowed-books').textContent = activeLoans.length.toLocaleString('vi-VN');
+        document.getElementById('kpi-borrowed-books-sub').textContent = `${activeLoans.length} phiếu đang lưu hành`;
+
+        document.getElementById('kpi-total-readers').textContent = state.readers.length.toLocaleString('vi-VN');
+        document.getElementById('kpi-total-readers-sub').textContent = `${activeReaders} hoạt động · ${lockedReaders} đã khóa`;
+
+        const overdueEl = document.getElementById('kpi-overdue-loans');
+        overdueEl.textContent = overdueLoans.length.toLocaleString('vi-VN');
+        overdueEl.className = `mt-2 text-3xl font-bold tracking-tight tabular-nums ${
+          overdueLoans.length > 0 ? 'text-red-600' : 'text-emerald-700'
+        }`;
+        document.getElementById('kpi-overdue-loans-sub').textContent =
+          overdueLoans.length > 0 ? `Phạt tạm tính: ${formatVND(pendingFine)}` : 'Không có phiếu quá hạn';
+
+        // Active & Overdue table
+        const tbody = document.getElementById('dashboard-active-loans-body');
+        if (activeLoans.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="py-10 px-5 text-center">
+                <p class="text-sm font-medium text-slate-700">Hiện không có phiếu mượn nào đang mở</p>
+                <p class="text-xs text-slate-500 mt-1">Tất cả sách đã được hoàn trả về kho.</p>
+                <button type="button" onclick="switchTab('loans')" class="mt-3 px-4 py-2 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+                  Tạo phiếu mượn
+                </button>
+              </td>
+            </tr>
+          `;
+        } else {
+          // Sort overdue first, then earliest due date
+          const sorted = [...activeLoans].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+          tbody.innerHTML = sorted
+            .map((loan) => {
+              const reader = state.readers.find((r) => r.id === loan.readerId);
+              const book = state.books.find((b) => b.id === loan.bookId);
+              const info = getLoanOverdueInfo(loan);
+
+              const statusHtml = info.isOverdue
+                ? `<span class="text-xs font-semibold text-red-600 whitespace-nowrap">Quá hạn ${info.overdueDays} ngày · ${formatVND(info.fine)}</span>`
+                : `<span class="text-xs font-medium text-emerald-700 whitespace-nowrap">Đang mượn (đúng hạn)</span>`;
+
+              return `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                  <td class="py-3 px-5 font-mono text-xs font-medium text-slate-700 whitespace-nowrap">${escapeHTML(loan.id)}</td>
+                  <td class="py-3 px-4">
+                    <div class="font-medium text-slate-900">${escapeHTML(reader ? reader.name : 'Không rõ')}</div>
+                    <div class="text-xs text-slate-500 font-mono">${escapeHTML(loan.readerId)}</div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="font-medium text-slate-900 max-w-[220px] truncate" title="${escapeHTML(book ? book.title : '')}">${escapeHTML(book ? book.title : 'Sách đã xóa')}</div>
+                  </td>
+                  <td class="py-3 px-4 font-mono text-xs tabular-nums text-slate-700 whitespace-nowrap">${formatDisplayDate(loan.dueDate)}</td>
+                  <td class="py-3 px-4">${statusHtml}</td>
+                  <td class="py-3 px-5 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      onclick="openReturnModal('${escapeHTML(loan.id)}')"
+                      class="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors whitespace-nowrap"
+                    >
+                      Trả sách
+                    </button>
+                  </td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+
+        // Status Breakdown Bars
+        const statusColors = {
+          'Còn trong kho': 'bg-emerald-600',
+          'Đang mượn': 'bg-blue-600',
+          'Hư hỏng': 'bg-amber-500',
+          'Thất lạc': 'bg-red-600',
+        };
+        const totalTitles = Math.max(1, state.books.length);
+        document.getElementById('dashboard-status-breakdown').innerHTML = BOOK_STATUSES.map((status) => {
+          const count = state.books.filter((b) => b.status === status).length;
+          const pct = Math.round((count / totalTitles) * 100);
+          return `
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-slate-700">${escapeHTML(status)}</span>
+                <span class="font-mono tabular-nums text-slate-500">${count} đầu sách (${pct}%)</span>
+              </div>
+              <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full ${statusColors[status]} rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Top Categories
+        const catMap = {};
+        state.books.forEach((b) => {
+          const c = b.category || 'Khác';
+          catMap[c] = (catMap[c] || 0) + 1;
+        });
+        const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        document.getElementById('dashboard-category-breakdown').innerHTML = sortedCats.length
+          ? sortedCats
+              .map(
+                ([cat, count]) => `
+              <div class="flex items-center justify-between text-xs py-1">
+                <span class="text-slate-700 truncate pr-2">${escapeHTML(cat)}</span>
+                <span class="font-mono tabular-nums text-slate-500 shrink-0">${count} đầu sách</span>
+              </div>
+            `
+              )
+              .join('')
+          : '<p class="text-xs text-slate-400">Chưa có dữ liệu thể loại.</p>';
+      }
+
+      // =========================================================================
+      // 7. BOOKS CRUD & RENDERING
+      // =========================================================================
+      function setBookFilter(status) {
+        state.bookFilter = status;
+        renderBooks();
+      }
+
+      function renderBooks() {
+        document.querySelectorAll('.book-filter-btn').forEach((btn) => {
+          const active = btn.dataset.filter === state.bookFilter;
+          btn.className = active
+            ? 'book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap bg-white text-slate-900 shadow-sm'
+            : 'book-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-slate-600 hover:text-slate-900';
+        });
+
+        const query = (document.getElementById('book-search-input').value || '').trim().toLowerCase();
+        const filtered = state.books.filter((book) => {
+          const matchesStatus = state.bookFilter === 'Tất cả' || book.status === state.bookFilter;
+          if (!matchesStatus) return false;
+          if (!query) return true;
+          return (
+            book.title.toLowerCase().includes(query) ||
+            book.author.toLowerCase().includes(query) ||
+            book.category.toLowerCase().includes(query) ||
+            book.code.toLowerCase().includes(query)
+          );
+        });
+
+        const tbody = document.getElementById('books-table-body');
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="py-12 px-5 text-center">
+                <p class="text-sm font-medium text-slate-700">Không tìm thấy sách phù hợp</p>
+                <p class="text-xs text-slate-500 mt-1">Thử thay đổi từ khóa tìm kiếm hoặc thêm đầu sách mới.</p>
+                <button type="button" onclick="openBookModal()" class="mt-3 px-4 py-2 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+                  Thêm sách mới
+                </button>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((book) => {
+            const statusTextColor = {
+              'Còn trong kho': 'text-emerald-700 border-emerald-200 bg-emerald-50/60',
+              'Đang mượn': 'text-blue-700 border-blue-200 bg-blue-50/60',
+              'Hư hỏng': 'text-amber-700 border-amber-200 bg-amber-50/60',
+              'Thất lạc': 'text-red-600 border-red-200 bg-red-50/60',
+            }[book.status] || 'text-slate-700 border-slate-200 bg-slate-50';
+
+            return `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3.5 px-5 font-mono text-xs font-medium text-slate-700 whitespace-nowrap">${escapeHTML(book.code)}</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-900">${escapeHTML(book.title)}</div>
+                  <div class="text-xs text-slate-500 mt-0.5">${escapeHTML(book.author)}</div>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600 whitespace-nowrap">${escapeHTML(book.category)}</td>
+                <td class="py-3.5 px-4 text-right font-mono tabular-nums font-semibold ${book.quantity === 0 ? 'text-red-600' : 'text-slate-900'}">
+                  ${book.quantity}
+                </td>
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <select
+                    aria-label="Cập nhật tình trạng sách ${escapeHTML(book.title)}"
+                    onchange="updateBookStatus('${escapeHTML(book.id)}', this.value)"
+                    class="px-2.5 py-1 text-xs font-medium border rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600 ${statusTextColor}"
+                  >
+                    ${BOOK_STATUSES.map(
+                      (st) => `<option value="${escapeHTML(st)}" ${book.status === st ? 'selected' : ''}>${escapeHTML(st)}</option>`
+                    ).join('')}
+                  </select>
+                </td>
+                <td class="py-3.5 px-5 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onclick="openBookModal('${escapeHTML(book.id)}')"
+                      class="px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onclick="deleteBook('${escapeHTML(book.id)}')"
+                      class="px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      function openBookModal(bookId = null) {
+        const form = document.getElementById('book-form');
+        form.reset();
+
+        if (bookId) {
+          const book = state.books.find((b) => b.id === bookId);
+          if (!book) return;
+          document.getElementById('book-modal-title').textContent = 'Chỉnh sửa thông tin sách';
+          document.getElementById('book-id-input').value = book.id;
+          document.getElementById('book-code-input').value = book.code;
+          document.getElementById('book-title-input').value = book.title;
+          document.getElementById('book-author-input').value = book.author;
+          document.getElementById('book-category-input').value = book.category;
+          document.getElementById('book-quantity-input').value = book.quantity;
+          document.getElementById('book-status-input').value = book.status;
+        } else {
+          document.getElementById('book-modal-title').textContent = 'Thêm sách mới';
+          document.getElementById('book-id-input').value = '';
+          const nextNum = 100 + state.books.length + 1;
+          document.getElementById('book-code-input').value = `BK-${nextNum}`;
+          document.getElementById('book-quantity-input').value = 1;
+          document.getElementById('book-status-input').value = 'Còn trong kho';
+        }
+        openModal('book-modal');
+        setTimeout(() => document.getElementById('book-title-input').focus(), 50);
+      }
+
+      function handleSaveBook(event) {
+        event.preventDefault();
+        const id = document.getElementById('book-id-input').value.trim();
+        const code = document.getElementById('book-code-input').value.trim();
+        const title = document.getElementById('book-title-input').value.trim();
+        const author = document.getElementById('book-author-input').value.trim();
+        const category = document.getElementById('book-category-input').value.trim();
+        const quantity = parseInt(document.getElementById('book-quantity-input').value, 10);
+        const status = document.getElementById('book-status-input').value;
+
+        if (!code || !title || !author || !category || isNaN(quantity) || quantity < 0) {
+          showToast('Vui lòng nhập đầy đủ và hợp lệ thông tin sách (số lượng >= 0).', 'error');
+          return;
+        }
+
+        const duplicateCode = state.books.find((b) => b.code.toLowerCase() === code.toLowerCase() && b.id !== id);
+        if (duplicateCode) {
+          showToast(`Mã sách "${code}" đã tồn tại trong hệ thống.`, 'error');
+          return;
+        }
+
+        if (id) {
+          const idx = state.books.findIndex((b) => b.id === id);
+          if (idx !== -1) {
+            state.books[idx] = { id, code, title, author, category, quantity, status };
+            showToast(`Đã cập nhật sách "${title}".`, 'success');
+          }
+        } else {
+          const newId = `S${String(Date.now()).slice(-5)}`;
+          state.books.unshift({ id: newId, code, title, author, category, quantity, status });
+          showToast(`Đã thêm sách mới "${title}".`, 'success');
+        }
+
+        saveAllData();
+        closeModal('book-modal');
+        renderAll();
+      }
+
+      function updateBookStatus(bookId, newStatus) {
+        const book = state.books.find((b) => b.id === bookId);
+        if (!book) return;
+        book.status = newStatus;
+        saveAllData();
+        renderAll();
+        showToast(`Đã chuyển tình trạng "${book.title}" sang "${newStatus}".`, 'success');
+      }
+
+      function deleteBook(bookId) {
+        const book = state.books.find((b) => b.id === bookId);
+        if (!book) return;
+
+        const hasActiveLoan = state.loans.some((l) => l.bookId === bookId && !l.returnDate);
+        if (hasActiveLoan) {
+          showToast(`Không thể xóa "${book.title}" vì đang có phiếu mượn chưa trả.`, 'error');
+          return;
+        }
+
+        openConfirmModal({
+          title: 'Xóa đầu sách',
+          message: `Bạn có chắc muốn xóa sách "${book.title}" (${book.code})? Hành động này không thể hoàn tác.`,
+          confirmLabel: 'Xóa sách',
+          onConfirm: () => {
+            state.books = state.books.filter((b) => b.id !== bookId);
+            saveAllData();
+            renderAll();
+            showToast(`Đã xóa sách "${book.title}".`, 'success');
+          },
+        });
+      }
+
+      // =========================================================================
+      // 8. READERS CRUD & RENDERING
+      // =========================================================================
+      function setReaderFilter(filter) {
+        state.readerFilter = filter;
+        renderReaders();
+      }
+
+      function renderReaders() {
+        document.querySelectorAll('.reader-filter-btn').forEach((btn) => {
+          const active = btn.dataset.filter === state.readerFilter;
+          btn.className = active
+            ? 'reader-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap bg-white text-slate-900 shadow-sm'
+            : 'reader-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-slate-600 hover:text-slate-900';
+        });
+
+        const query = (document.getElementById('reader-search-input').value || '').trim().toLowerCase();
+        const filtered = state.readers.filter((reader) => {
+          if (state.readerFilter === 'active' && !reader.active) return false;
+          if (state.readerFilter === 'locked' && reader.active) return false;
+          if (!query) return true;
+          return (
+            reader.name.toLowerCase().includes(query) ||
+            reader.email.toLowerCase().includes(query) ||
+            reader.phone.toLowerCase().includes(query) ||
+            reader.id.toLowerCase().includes(query)
+          );
+        });
+
+        const tbody = document.getElementById('readers-table-body');
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="py-12 px-5 text-center">
+                <p class="text-sm font-medium text-slate-700">Không tìm thấy độc giả nào</p>
+                <p class="text-xs text-slate-500 mt-1">Thử thay đổi bộ lọc hoặc đăng ký thẻ độc giả mới.</p>
+                <button type="button" onclick="openReaderModal()" class="mt-3 px-4 py-2 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors">
+                  Thêm độc giả
+                </button>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((reader) => {
+            const activeLoanCount = state.loans.filter((l) => l.readerId === reader.id && !l.returnDate).length;
+            const statusText = reader.active
+              ? `<span class="text-xs font-semibold text-emerald-700 whitespace-nowrap">Hoạt động (Active)</span>`
+              : `<span class="text-xs font-semibold text-red-600 whitespace-nowrap">Đã khóa thẻ</span>`;
+
+            return `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3.5 px-5 font-mono text-xs font-medium text-slate-700 whitespace-nowrap">${escapeHTML(reader.id)}</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-900">${escapeHTML(reader.name)}</div>
+                  <div class="text-xs text-slate-500 mt-0.5">${escapeHTML(reader.email)}</div>
+                </td>
+                <td class="py-3.5 px-4 font-mono text-xs tabular-nums text-slate-700 whitespace-nowrap">${escapeHTML(reader.phone)}</td>
+                <td class="py-3.5 px-4 text-right font-mono tabular-nums font-medium text-slate-900">${activeLoanCount}</td>
+                <td class="py-3.5 px-4">${statusText}</td>
+                <td class="py-3.5 px-5 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onclick="toggleReaderLock('${escapeHTML(reader.id)}')"
+                      class="px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        reader.active
+                          ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                          : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                      }"
+                    >
+                      ${reader.active ? 'Khóa thẻ' : 'Mở khóa'}
+                    </button>
+                    <button
+                      type="button"
+                      onclick="openReaderModal('${escapeHTML(reader.id)}')"
+                      class="px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onclick="deleteReader('${escapeHTML(reader.id)}')"
+                      class="px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      function openReaderModal(readerId = null) {
+        const form = document.getElementById('reader-form');
+        form.reset();
+
+        if (readerId) {
+          const reader = state.readers.find((r) => r.id === readerId);
+          if (!reader) return;
+          document.getElementById('reader-modal-title').textContent = 'Cập nhật độc giả';
+          document.getElementById('reader-id-input').value = reader.id;
+          document.getElementById('reader-name-input').value = reader.name;
+          document.getElementById('reader-email-input').value = reader.email;
+          document.getElementById('reader-phone-input').value = reader.phone;
+          document.getElementById('reader-active-input').value = String(reader.active);
+        } else {
+          document.getElementById('reader-modal-title').textContent = 'Thêm độc giả mới';
+          document.getElementById('reader-id-input').value = '';
+          document.getElementById('reader-active-input').value = 'true';
+        }
+
+        openModal('reader-modal');
+        setTimeout(() => document.getElementById('reader-name-input').focus(), 50);
+      }
+
+      function handleSaveReader(event) {
+        event.preventDefault();
+        const id = document.getElementById('reader-id-input').value.trim();
+        const name = document.getElementById('reader-name-input').value.trim();
+        const email = document.getElementById('reader-email-input').value.trim();
+        const phone = document.getElementById('reader-phone-input').value.trim();
+        const active = document.getElementById('reader-active-input').value === 'true';
+
+        if (!name || !email || !phone) {
+          showToast('Vui lòng nhập đầy đủ họ tên, email và số điện thoại.', 'error');
+          return;
+        }
+
+        if (id) {
+          const idx = state.readers.findIndex((r) => r.id === id);
+          if (idx !== -1) {
+            state.readers[idx] = { id, name, email, phone, active };
+            showToast(`Đã cập nhật thông tin độc giả "${name}".`, 'success');
+          }
+        } else {
+          const nextNum = String(state.readers.length + 1).padStart(3, '0');
+          let newId = `DG-${nextNum}`;
+          while (state.readers.some((r) => r.id === newId)) {
+            newId = `DG-${String(Math.floor(100 + Math.random() * 900))}`;
+          }
+          state.readers.unshift({ id: newId, name, email, phone, active });
+          showToast(`Đã cấp thẻ độc giả "${name}" (${newId}).`, 'success');
+        }
+
+        saveAllData();
+        closeModal('reader-modal');
+        renderAll();
+      }
+
+      function toggleReaderLock(readerId) {
+        const reader = state.readers.find((r) => r.id === readerId);
+        if (!reader) return;
+        reader.active = !reader.active;
+        saveAllData();
+        renderAll();
+        showToast(
+          reader.active
+            ? `Đã mở khóa thẻ độc giả "${reader.name}".`
+            : `Đã khóa thẻ độc giả "${reader.name}". Không thể tạo phiếu mượn mới cho thẻ này.`,
+          reader.active ? 'success' : 'warning'
+        );
+      }
+
+      function deleteReader(readerId) {
+        const reader = state.readers.find((r) => r.id === readerId);
+        if (!reader) return;
+
+        const hasActiveLoan = state.loans.some((l) => l.readerId === readerId && !l.returnDate);
+        if (hasActiveLoan) {
+          showToast(`Không thể xóa "${reader.name}" vì đang có sách chưa trả.`, 'error');
+          return;
+        }
+
+        openConfirmModal({
+          title: 'Xóa hồ sơ độc giả',
+          message: `Bạn có chắc muốn xóa độc giả "${reader.name}" (${reader.id})?`,
+          confirmLabel: 'Xóa độc giả',
+          onConfirm: () => {
+            state.readers = state.readers.filter((r) => r.id !== readerId);
+            saveAllData();
+            renderAll();
+            showToast(`Đã xóa độc giả "${reader.name}".`, 'success');
+          },
+        });
+      }
+
+      // =========================================================================
+      // 9. LOANS (BORROW / RETURN) & RENDERING
+      // =========================================================================
+      function setLoanFilter(filter) {
+        state.loanFilter = filter;
+        renderLoans();
+      }
+
+      function renderBorrowFormOptions() {
+        const readerSelect = document.getElementById('loan-reader-select');
+        const bookSelect = document.getElementById('loan-book-select');
+        const submitBtn = document.getElementById('borrow-submit-btn');
+        const noteEl = document.getElementById('borrow-form-availability-note');
+
+        const activeReaders = state.readers.filter((r) => r.active);
+        const availableBooks = state.books.filter(
+          (b) => Number(b.quantity) > 0 && b.status !== 'Hư hỏng' && b.status !== 'Thất lạc'
+        );
+
+        const prevReader = readerSelect.value;
+        const prevBook = bookSelect.value;
+
+        if (activeReaders.length === 0) {
+          readerSelect.innerHTML = `<option value="">-- Không có độc giả Active --</option>`;
+        } else {
+          readerSelect.innerHTML =
+            `<option value="">-- Chọn độc giả --</option>` +
+            activeReaders
+              .map(
+                (r) => `<option value="${escapeHTML(r.id)}">${escapeHTML(r.id)} — ${escapeHTML(r.name)} (${escapeHTML(r.phone)})</option>`
+              )
+              .join('');
+          if (activeReaders.some((r) => r.id === prevReader)) {
+            readerSelect.value = prevReader;
+          }
+        }
+
+        if (availableBooks.length === 0) {
+          bookSelect.innerHTML = `<option value="">-- Không có sách khả dụng trong kho --</option>`;
+        } else {
+          bookSelect.innerHTML =
+            `<option value="">-- Chọn sách trong kho --</option>` +
+            availableBooks
+              .map(
+                (b) => `<option value="${escapeHTML(b.id)}">${escapeHTML(b.code)} — ${escapeHTML(b.title)} (Còn: ${b.quantity})</option>`
+              )
+              .join('');
+          if (availableBooks.some((b) => b.id === prevBook)) {
+            bookSelect.value = prevBook;
+          }
+        }
+
+        const borrowInput = document.getElementById('loan-borrow-date');
+        const dueInput = document.getElementById('loan-due-date');
+        if (!borrowInput.value) {
+          const today = new Date();
+          borrowInput.value = formatDateISO(today);
+          dueInput.value = addDaysISO(today, 7);
+        }
+
+        const canBorrow = activeReaders.length > 0 && availableBooks.length > 0;
+        submitBtn.disabled = !canBorrow;
+        noteEl.textContent = canBorrow
+          ? `Sẵn sàng: ${activeReaders.length} độc giả hoạt động · ${availableBooks.length} đầu sách còn trong kho.`
+          : 'Cần ít nhất 1 độc giả đang hoạt động và 1 đầu sách có số lượng > 0 để tạo phiếu mượn.';
+      }
+
+      function handleCreateLoan(event) {
+        event.preventDefault();
+        const readerId = document.getElementById('loan-reader-select').value;
+        const bookId = document.getElementById('loan-book-select').value;
+        const borrowDate = document.getElementById('loan-borrow-date').value;
+        const dueDate = document.getElementById('loan-due-date').value;
+
+        const reader = state.readers.find((r) => r.id === readerId);
+        const book = state.books.find((b) => b.id === bookId);
+
+        if (!reader || !reader.active) {
+          showToast('Vui lòng chọn độc giả đang ở trạng thái hoạt động (Active).', 'error');
+          return;
+        }
+        if (!book || Number(book.quantity) <= 0 || book.status === 'Hư hỏng' || book.status === 'Thất lạc') {
+          showToast('Sách được chọn không còn số lượng khả dụng trong kho.', 'error');
+          return;
+        }
+        if (!borrowDate || !dueDate || dueDate < borrowDate) {
+          showToast('Hạn trả phải lớn hơn hoặc bằng ngày mượn.', 'error');
+          return;
+        }
+
+        // Tạo phiếu & tự động trừ kho
+        const nextNum = String(state.loans.length + 1).padStart(3, '0');
+        let newId = `PM-${nextNum}`;
+        while (state.loans.some((l) => l.id === newId)) {
+          newId = `PM-${String(Math.floor(100 + Math.random() * 900))}`;
+        }
+
+        state.loans.unshift({
+          id: newId,
+          readerId,
+          bookId,
+          borrowDate,
+          dueDate,
+          returnDate: null,
+          fine: 0,
+        });
+
+        book.quantity = Number(book.quantity) - 1;
+        if (book.quantity === 0 && book.status === 'Còn trong kho') {
+          book.status = 'Đang mượn';
+        }
+
+        saveAllData();
+        document.getElementById('loan-reader-select').value = '';
+        document.getElementById('loan-book-select').value = '';
+        renderAll();
+        showToast(`Đã tạo phiếu ${newId} cho "${reader.name}" mượn "${book.title}".`, 'success');
+      }
+
+      function renderLoans() {
+        renderBorrowFormOptions();
+
+        document.querySelectorAll('.loan-filter-btn').forEach((btn) => {
+          const active = btn.dataset.filter === state.loanFilter;
+          btn.className = active
+            ? 'loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap bg-white text-slate-900 shadow-sm'
+            : 'loan-filter-btn px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-slate-600 hover:text-slate-900';
+        });
+
+        const query = (document.getElementById('loan-search-input').value || '').trim().toLowerCase();
+        const filtered = state.loans.filter((loan) => {
+          const info = getLoanOverdueInfo(loan);
+          if (state.loanFilter === 'active' && info.isReturned) return false;
+          if (state.loanFilter === 'overdue' && (info.isReturned || !info.isOverdue)) return false;
+          if (state.loanFilter === 'returned' && !info.isReturned) return false;
+
+          if (!query) return true;
+          const reader = state.readers.find((r) => r.id === loan.readerId);
+          const book = state.books.find((b) => b.id === loan.bookId);
+          return (
+            loan.id.toLowerCase().includes(query) ||
+            (reader && reader.name.toLowerCase().includes(query)) ||
+            (book && book.title.toLowerCase().includes(query))
+          );
+        });
+
+        const tbody = document.getElementById('loans-table-body');
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="py-12 px-5 text-center">
+                <p class="text-sm font-medium text-slate-700">Chưa có phiếu mượn nào phù hợp</p>
+                <p class="text-xs text-slate-500 mt-1">Sử dụng biểu mẫu phía trên để tạo phiếu mượn mới.</p>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((loan) => {
+            const reader = state.readers.find((r) => r.id === loan.readerId);
+            const book = state.books.find((b) => b.id === loan.bookId);
+            const info = getLoanOverdueInfo(loan);
+
+            let statusHtml = '';
+            if (info.isReturned) {
+              statusHtml = `
+                <div class="text-xs font-medium text-slate-700 whitespace-nowrap">Đã trả</div>
+                <div class="text-xs font-mono tabular-nums text-slate-400 mt-0.5">${formatDisplayDate(loan.returnDate)}</div>
+              `;
+            } else if (info.isOverdue) {
+              statusHtml = `<span class="text-xs font-semibold text-red-600 whitespace-nowrap">Quá hạn ${info.overdueDays} ngày</span>`;
+            } else {
+              const daysLeft = diffDays(getTodayISO(), loan.dueDate);
+              const sub = daysLeft === 0 ? 'Hạn hôm nay' : `Còn ${daysLeft} ngày`;
+              statusHtml = `
+                <div class="text-xs font-semibold text-blue-700 whitespace-nowrap">Đang mượn</div>
+                <div class="text-xs text-slate-500 mt-0.5">${sub}</div>
+              `;
+            }
+
+            const fineHtml = info.fine > 0
+              ? `<span class="font-mono tabular-nums font-semibold ${info.isReturned ? 'text-slate-900' : 'text-red-600'}">${formatVND(info.fine)}</span>${info.isReturned ? '' : '<div class="text-[11px] text-slate-400">tạm tính</div>'}`
+              : `<span class="font-mono tabular-nums text-slate-400">0đ</span>`;
+
+            const actionHtml = info.isReturned
+              ? `<span class="text-xs text-slate-400">Hoàn tất</span>`
+              : `<button
+                   type="button"
+                   onclick="openReturnModal('${escapeHTML(loan.id)}')"
+                   class="px-3 py-1.5 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors whitespace-nowrap"
+                 >
+                   Trả sách
+                 </button>`;
+
+            return `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3.5 px-5 font-mono text-xs font-medium text-slate-700 whitespace-nowrap">${escapeHTML(loan.id)}</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-900">${escapeHTML(reader ? reader.name : 'Độc giả đã xóa')}</div>
+                  <div class="text-xs font-mono text-slate-500 mt-0.5">${escapeHTML(loan.readerId)}</div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-900 max-w-[240px] truncate" title="${escapeHTML(book ? book.title : '')}">${escapeHTML(book ? book.title : 'Sách đã xóa')}</div>
+                  <div class="text-xs font-mono text-slate-500 mt-0.5">${escapeHTML(book ? book.code : loan.bookId)}</div>
+                </td>
+                <td class="py-3.5 px-4 font-mono text-xs tabular-nums whitespace-nowrap">
+                  <div class="text-slate-700">${formatDisplayDate(loan.borrowDate)}</div>
+                  <div class="${!info.isReturned && info.isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'} mt-0.5">Hạn: ${formatDisplayDate(loan.dueDate)}</div>
+                </td>
+                <td class="py-3.5 px-4">${statusHtml}</td>
+                <td class="py-3.5 px-4 text-right whitespace-nowrap">${fineHtml}</td>
+                <td class="py-3.5 px-5 text-right whitespace-nowrap">${actionHtml}</td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      function openReturnModal(loanId) {
+        const loan = state.loans.find((l) => l.id === loanId);
+        if (!loan || loan.returnDate) return;
+
+        const reader = state.readers.find((r) => r.id === loan.readerId);
+        const book = state.books.find((b) => b.id === loan.bookId);
+        const info = getLoanOverdueInfo(loan);
+        const today = getTodayISO();
+
+        const detailsEl = document.getElementById('return-modal-details');
+        detailsEl.innerHTML = `
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+            <div class="flex justify-between gap-4">
+              <span class="text-slate-500">Mã phiếu</span>
+              <span class="font-mono font-semibold text-slate-900">${escapeHTML(loan.id)}</span>
+            </div>
+            <div class="flex justify-between gap-4">
+              <span class="text-slate-500">Độc giả</span>
+              <span class="font-medium text-slate-900 text-right">${escapeHTML(reader ? reader.name : loan.readerId)}</span>
+            </div>
+            <div class="flex justify-between gap-4">
+              <span class="text-slate-500">Sách trả</span>
+              <span class="font-medium text-slate-900 text-right">${escapeHTML(book ? book.title : loan.bookId)}</span>
+            </div>
+            <div class="flex justify-between gap-4 pt-2 border-t border-slate-200">
+              <span class="text-slate-500">Hạn trả / Ngày trả</span>
+              <span class="font-mono tabular-nums text-slate-900">${formatDisplayDate(loan.dueDate)} → ${formatDisplayDate(today)}</span>
+            </div>
+          </div>
+          ${
+            info.isOverdue
+              ? `<div class="p-3.5 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between gap-3">
+                   <div>
+                     <div class="text-xs font-semibold text-red-700">Quá hạn ${info.overdueDays} ngày</div>
+                     <div class="text-xs text-red-600 mt-0.5 tabular-nums">${info.overdueDays} ngày × 5.000đ/ngày</div>
+                   </div>
+                   <div class="text-lg font-bold font-mono tabular-nums text-red-700">${formatVND(info.fine)}</div>
+                 </div>`
+              : `<div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
+                   <span class="text-xs font-semibold text-emerald-700">Trả đúng hạn — Không phát sinh phí phạt</span>
+                   <span class="text-sm font-bold font-mono tabular-nums text-emerald-700">0đ</span>
+                 </div>`
+          }
+        `;
+
+        document.getElementById('return-confirm-btn').onclick = () => processReturnLoan(loan.id);
+        openModal('return-modal');
+      }
+
+      function processReturnLoan(loanId) {
+        const loan = state.loans.find((l) => l.id === loanId);
+        if (!loan || loan.returnDate) return;
+
+        const info = getLoanOverdueInfo(loan);
+        loan.returnDate = getTodayISO();
+        loan.fine = info.fine;
+
+        const book = state.books.find((b) => b.id === loan.bookId);
+        if (book) {
+          book.quantity = Number(book.quantity || 0) + 1;
+          if (book.status === 'Đang mượn' && book.quantity > 0) {
+            book.status = 'Còn trong kho';
+          }
+        }
+
+        saveAllData();
+        closeModal('return-modal');
+        renderAll();
+
+        const bookTitle = book ? `"${book.title}"` : loan.bookId;
+        if (loan.fine > 0) {
+          showToast(`Đã trả sách ${bookTitle}. Tiền phạt quá hạn (${info.overdueDays} ngày): ${formatVND(loan.fine)}.`, 'warning');
+        } else {
+          showToast(`Đã trả sách ${bookTitle} đúng hạn và cộng lại vào kho.`, 'success');
+        }
+      }
+
+      // =========================================================================
+      // 10. GLOBAL RENDER & BOOTSTRAP
+      // =========================================================================
+      function updateSidebarCounts() {
+        document.getElementById('nav-count-books').textContent = state.books.length;
+        document.getElementById('nav-count-readers').textContent = state.readers.length;
+        document.getElementById('nav-count-loans').textContent = state.loans.filter((l) => !l.returnDate).length;
+      }
+
+      function renderAll() {
+        updateSidebarCounts();
+        renderDashboard();
+        renderBooks();
+        renderReaders();
+        renderLoans();
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        switchTab('dashboard');
+      });
+    </script>
+  </body>
+</html>
